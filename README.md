@@ -22,9 +22,11 @@
   - `[0, 0, 1]`: Turn left.
 
 - **Reward System:**  
-  - **Positive Reward:** +10 points for consuming apple.
-  - **Negative Reward:** -10 points for collisions with walls or the other snake.
-  - **Neutral Reward:** 0 points for each move without incident.
+  - **Base Reward:** +0.1 points for staying alive.
+  - **Food Rewards:** +15 points for consuming apple, with bonus points based on snake length.
+  - **Distance Rewards:** +0.5 points for moving closer to food, -0.2 points for moving away.
+  - **Collision Penalties:** -10 points for collisions with walls or self.
+  - **Proximity Penalties:** -0.3 points for getting too close to the other snake.
 
 - **Learning Process:**  
   Utilizing Deep Q-Networks (DQN), the snakes employ experience replay and an epsilon-greedy strategy to balance exploration and exploitation. Over time, they refine their strategies to optimize performance.
@@ -61,10 +63,12 @@
 ## Visual Experience
 Upon running the training script:
 * **Game Window:**
-   * **Blue Snake:** Represents the first AI agent.
-   * **Green Snake:** Represents the second AI agent.
-   * **Red Squares:** Indicate apple locations.
-   * **Score Display:** Located in the top-left corner.
+   * **Blue Snake (Bluessy):** First AI agent with glowing head and gradient body.
+   * **Red Snake (Redish):** Second AI agent with glowing head and gradient body.
+   * **Golden Apple:** Features a glowing effect and particle animations when collected.
+   * **Visual Effects:** Includes snake trails, particle effects, and smooth animations.
+   * **Score Display:** Shows both snakes' scores and current game number.
+   * **Resizable Window:** Supports dynamic window resizing while maintaining gameplay.
 * **Training Plot:**
    * Real-time plotting of scores for both snakes.
    * Moving averages to illustrate learning progress.
