@@ -28,6 +28,11 @@
   - **Collision Penalties:** -10 points for collisions with walls or self.
   - **Proximity Penalties:** -0.3 points for getting too close to the other snake.
 
+  - **Positive Reward:** +10 points for consuming apple.
+  - **Negative Reward:** -10 points for collisions with walls or the other snake.
+  - **Neutral Reward:** 0 points for each move without incident.
+
+
 - **Learning Process:**  
   Utilizing Deep Q-Networks (DQN), the snakes employ experience replay and an epsilon-greedy strategy to balance exploration and exploitation. Over time, they refine their strategies to optimize performance.
 
@@ -69,6 +74,12 @@ Upon running the training script:
    * **Visual Effects:** Includes snake trails, particle effects, and smooth animations.
    * **Score Display:** Shows both snakes' scores and current game number.
    * **Resizable Window:** Supports dynamic window resizing while maintaining gameplay.
+
+   * **Blue Snake:** Represents the first AI agent.
+   * **Green Snake:** Represents the second AI agent.
+   * **Red Squares:** Indicate apple locations.
+   * **Score Display:** Located in the top-left corner.
+
 * **Training Plot:**
    * Real-time plotting of scores for both snakes.
    * Moving averages to illustrate learning progress.
@@ -107,3 +118,6 @@ Upon running the training script:
 This project is licensed under the MIT License.
 
 Embark on this journey to observe how AI agents evolve from random movements to strategic competitors in the quest for apple!
+
+Embark on this journey to observe how AI agents evolve from random movements to strategic competitors in the quest for apple!
+
