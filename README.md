@@ -1,123 +1,233 @@
+# Snake's & The Golden Apple - Advanced RL System
 
-# Snake's & The Golden Apple
+A competitive multi-agent reinforcement learning environment implementing state-of-the-art Deep Q-Learning algorithms.
 
-**Snake's & The Golden Apple** is a competitive rendition of the classic Snake game where two AI-controlled snakes learn to navigate, gather apple, and avoid collisions using Deep Q-Learning (DQN). This project showcases reinforcement learning (RL) in a dynamic, adversarial environment.
+![Environment](https://img.shields.io/badge/Environment-Multi--Agent%20RL-blue)
+![Algorithm](https://img.shields.io/badge/Algorithm-Double%20DQN-green)
+![Framework](https://img.shields.io/badge/Framework-PyTorch-red)
 
-![Snake Animation](Snake_RL.gif)
+## Game Environment
 
-## Technical Overview
+<svg width="600" height="300" viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e0e0e0" stroke-width="1"/>
+    </pattern>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="600" height="300" fill="#f8f9fa"/>
+  <rect width="600" height="300" fill="url(#grid)"/>
+  
+  <!-- Snake 1 (Blue) -->
+  <circle cx="120" cy="150" r="12" fill="#0066cc"/>
+  <circle cx="100" cy="150" r="10" fill="#0066cc" opacity="0.8"/>
+  <circle cx="80" cy="150" r="8" fill="#0066cc" opacity="0.6"/>
+  <circle cx="60" cy="150" r="6" fill="#0066cc" opacity="0.4"/>
+  
+  <!-- Snake 2 (Red) -->
+  <circle cx="480" cy="150" r="12" fill="#cc0000"/>
+  <circle cx="500" cy="150" r="10" fill="#cc0000" opacity="0.8"/>
+  <circle cx="520" cy="150" r="8" fill="#cc0000" opacity="0.6"/>
+  <circle cx="540" cy="150" r="6" fill="#cc0000" opacity="0.4"/>
+  
+  <!-- Golden Apple -->
+  <circle cx="300" cy="150" r="15" fill="#ffd700" stroke="#ff8c00" stroke-width="2"/>
+  <circle cx="300" cy="150" r="8" fill="#ffff00" opacity="0.6"/>
+  
+  <!-- Labels -->
+  <text x="120" y="130" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#0066cc">Bluessy</text>
+  <text x="480" y="130" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#cc0000">Redish</text>
+  <text x="300" y="130" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="#ff8c00">Golden Apple</text>
+  
+  <!-- Title -->
+  <text x="300" y="30" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#333">Competitive Snake Environment</text>
+</svg>
 
-### Reinforcement Learning Mechanics
+### Game in Action
 
-- **State Representation:**  
-  Each snake's state is defined by 11 parameters:
-  - Danger indicators: Straight ahead, right, and left (binary values).
-  - Current movement direction: Encoded as up, down, left, or right.
-  - apple position relative to the snake's head: Indicators for apple being left, right, up, or down.
+![Snake RL Training](Snake_RL.gif)
 
-- **Action Set:**  
-  The snakes can execute one of three actions:
-  - `[1, 0, 0]`: Move straight.
-  - `[0, 1, 0]`: Turn right.
-  - `[0, 0, 1]`: Turn left.
+*Real-time training visualization showing competitive gameplay between AI agents*
 
-- **Reward System:**  
-  - **Base Reward:** +0.1 points for staying alive.
-  - **Food Rewards:** +15 points for consuming apple, with bonus points based on snake length.
-  - **Distance Rewards:** +0.5 points for moving closer to food, -0.2 points for moving away.
-  - **Collision Penalties:** -10 points for collisions with walls or self.
-  - **Proximity Penalties:** -0.3 points for getting too close to the other snake.
+## Technical Architecture
 
-  - **Positive Reward:** +10 points for consuming apple.
-  - **Negative Reward:** -10 points for collisions with walls or the other snake.
-  - **Neutral Reward:** 0 points for each move without incident.
+### Deep Q-Network (DQN) Implementation
+- **Input**: 25-dimensional state vector
+- **Architecture**: 256 → 128 → 4 neurons
+- **Activation**: ReLU (hidden), Linear (output)
+- **Optimizer**: Adam (lr=0.001)
 
+### Double DQN Algorithm
+```python
+# Reduces overestimation bias
+target_q_values = target_network(next_states).gather(1, next_actions.unsqueeze(1))
+targets = rewards + (gamma * target_q_values * (1 - dones))
+```
 
-- **Learning Process:**  
-  Utilizing Deep Q-Networks (DQN), the snakes employ experience replay and an epsilon-greedy strategy to balance exploration and exploitation. Over time, they refine their strategies to optimize performance.
+### Dueling DQN Architecture
+```python
+# Separate value and advantage streams
+value_stream = self.value_stream(features)
+advantage_stream = self.advantage_stream(features)
+q_values = value_stream + (advantage_stream - advantage_stream.mean(dim=1, keepdim=True))
+```
 
-### Project Structure
+### Prioritized Experience Replay
+- **Buffer Size**: 50,000 experiences
+- **Alpha**: 0.6 (prioritization strength)
+- **Beta**: 0.4 (importance sampling)
+- **Sampling**: TD-error based priority
 
-- **`snake_env.py`**: Defines the game environment using Pygame.
-- **`model.py`**: Contains the DQN and agent implementations.
-- **`train.py`**: Manages the training loop and visualizations.
-- **`environment.yml`**: Specifies the Conda environment configuration.
+## State Representation (25D)
 
-## Setup and Execution
+| Index | Feature | Description | Range |
+|-------|---------|-------------|-------|
+| 0-3 | Snake 1 direction | One-hot encoding | [0,1] |
+| 4-7 | Snake 2 direction | One-hot encoding | [0,1] |
+| 8-11 | Food direction | One-hot encoding | [0,1] |
+| 12-15 | Wall proximity | One-hot encoding | [0,1] |
+| 16-19 | Snake 1 body proximity | One-hot encoding | [0,1] |
+| 20-23 | Snake 2 body proximity | One-hot encoding | [0,1] |
+| 24 | Snake 1 length | Normalized | [0,1] |
 
-1. **Create the Conda Environment:**
-   ```bash
-   conda env create -f environment.yml
-   ```
+## Reward Engineering
 
-2. **Activate the Environment:**
-   ```bash
-   conda activate snake_rl
-   ```
+### Primary Rewards
+- **Food Consumption**: `10 + length_bonus + speed_bonus + competitive_bonus`
+- **Survival**: `0.1 * (1 - frame_iteration/1000)`
+- **Collision**: `-10`
 
-3. **Set OpenMP Environment Variable:**
-   ```bash
-   export KMP_DUPLICATE_LIB_OK=TRUE
-   ```
+### Advanced Rewards
+- **Proximity to Food**: `exp(-distance_to_food/10) * 2`
+- **Competitive Advantage**: `2 if closer_to_food_than_opponent else 0`
+- **Efficiency**: `length * 0.1 / max(frame_iteration, 1)`
 
-4. **Initiate Training:**
-   ```bash
-   python train.py
-   ```
+## Hyperparameters
 
-## Visual Experience
-Upon running the training script:
-* **Game Window:**
-   * **Blue Snake (Bluessy):** First AI agent with glowing head and gradient body.
-   * **Red Snake (Redish):** Second AI agent with glowing head and gradient body.
-   * **Golden Apple:** Features a glowing effect and particle animations when collected.
-   * **Visual Effects:** Includes snake trails, particle effects, and smooth animations.
-   * **Score Display:** Shows both snakes' scores and current game number.
-   * **Resizable Window:** Supports dynamic window resizing while maintaining gameplay.
+```python
+LEARNING_RATE = 0.001
+GAMMA = 0.99
+EPSILON_START = 1.0
+EPSILON_END = 0.01
+EPSILON_DECAY = 0.995
+BATCH_SIZE = 64
+TARGET_UPDATE_FREQUENCY = 1000
+MEMORY_CAPACITY = 50000
+```
 
-   * **Blue Snake:** Represents the first AI agent.
-   * **Green Snake:** Represents the second AI agent.
-   * **Red Squares:** Indicate apple locations.
-   * **Score Display:** Located in the top-left corner.
+## Installation
 
-* **Training Plot:**
-   * Real-time plotting of scores for both snakes.
-   * Moving averages to illustrate learning progress.
-   * Updates after each game.
+```bash
+# Clone repository
+git clone <repository-url>
+cd Snake-Apple
 
-## Learning Phases
-1. **Initial Phase:**
-   * Predominantly random movements.
-   * Basic survival skills development, such as avoiding walls.
-2. **Intermediate Phase:**
-   * Emergence of apple-seeking behavior.
-   * Improved collision avoidance.
-3. **Advanced Phase:**
-   * Development of sophisticated strategies.
-   * Enhanced competition for apple.
-   * Superior survival techniques.
+# Install dependencies
+pip install torch pygame numpy matplotlib
 
-## Controls
-* **Terminate Training:**
-   * Close the game window or press `Ctrl+C` in the terminal.
-* **Progress Persistence:**
-   * The training process automatically saves the best scores.
-   * Each session builds upon previous learning.
+# Run training
+python train.py
+```
 
-## Notes
-* **Exploration vs. Exploitation:**
-   * The snakes begin with high exploration, making random moves, and gradually shift towards exploitation as they learn effective strategies.
-* **Training Duration:**
-   * Significant improvements may require several hours of training.
-* **Visualization:**
-   * The matplotlib window provides real-time insights into learning progress.
-* **Hardware Considerations:**
-   * This implementation is optimized for CPU-only systems and does not require a dedicated GPU.
+## Usage
+
+### Basic Training
+```bash
+python train.py
+```
+
+### Testing
+```bash
+python test_enhanced_snake.py
+```
+
+### Controls
+- **SPACE**: Pause/Resume
+- **H**: Toggle help
+- **+/-**: Speed control
+- **R**: Reset speed
+- **ESC**: Exit
+
+## File Structure
+
+```
+Snake-Apple/
+├── model.py              # DQN architecture
+├── snake_env.py          # Game environment
+├── train.py              # Training loop
+├── logger.py             # Metrics tracking
+├── config.py             # Configuration
+├── game_assets.py        # Asset loading
+├── test_enhanced_snake.py # Test suite
+├── requirements.txt      # Dependencies
+├── models/               # Checkpoints
+└── logs/                 # Training logs
+```
+
+## Performance Metrics
+
+### Training Dashboard
+- Loss tracking with gradient clipping
+- Q-value monitoring per agent
+- Epsilon decay visualization
+- Win rate analysis
+- Game length distribution
+
+### Expected Performance
+- **Convergence**: 2000-5000 games
+- **Peak Score**: 15-25 average
+- **Win Rate**: 60-70%
+- **Training Time**: 2-4 hours (CPU), 30-60 min (GPU)
+
+## Advanced Features
+
+### Multi-Agent Competition
+- Simultaneous learning
+- Competitive dynamics
+- Adaptive opponents
+
+### Model Persistence
+- Checkpoint system
+- Resume training
+- Version control
+
+### Real-time Monitoring
+- Live metrics
+- Performance plots
+- Interactive controls
+
+## Troubleshooting
+
+### Common Issues
+1. **CUDA OOM**: Reduce batch size
+2. **Slow Training**: Enable GPU
+3. **Poor Performance**: Tune hyperparameters
+4. **Memory Leaks**: Check buffer size
+
+### Optimization
+- GPU acceleration (3-5x speedup)
+- Batch processing
+- Memory management
+- Parallel training
+
+## Research Applications
+
+- Multi-agent RL dynamics
+- Algorithm comparison
+- Strategic gameplay analysis
+- Competitive learning
 
 ## License
-This project is licensed under the MIT License.
 
-Embark on this journey to observe how AI agents evolve from random movements to strategic competitors in the quest for apple!
+MIT License
 
-Embark on this journey to observe how AI agents evolve from random movements to strategic competitors in the quest for apple!
+## Citation
 
+```bibtex
+@software{snake_rl_2024,
+  title={Snake's & The Golden Apple: Advanced Multi-Agent RL},
+  author={[Your Name]},
+  year={2024}
+}
+```

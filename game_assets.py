@@ -30,6 +30,52 @@ class GameAssets:
             self.textures['snake_body'] = snake_body
         except:
             self.textures['snake_body'] = None
+        
+        # Load golden apple texture
+        try:
+            golden_apple = pygame.image.load(os.path.join(self.assets_dir, 'golden_apple.png')).convert_alpha()
+            self.textures['golden_apple'] = golden_apple
+        except:
+            self.textures['golden_apple'] = None
+        
+        # Create snake head texture programmatically if not found
+        if 'snake_head' not in self.textures:
+            self.textures['snake_head'] = self._create_snake_head_texture()
+        
+        # Create snake body texture programmatically if not found
+        if 'snake_body' not in self.textures or self.textures['snake_body'] is None:
+            self.textures['snake_body'] = self._create_snake_body_texture()
+    
+    def _create_snake_head_texture(self, size=20):
+        """Create a snake head texture programmatically"""
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        
+        # Draw snake head with gradient effect
+        center = size // 2
+        for i in range(center):
+            alpha = int(255 * (1 - i / center))
+            color = (0, 122, 255, alpha)
+            pygame.draw.circle(surface, color, (center, center), center - i)
+        
+        # Add eyes
+        eye_color = (255, 255, 255)
+        pygame.draw.circle(surface, eye_color, (center - 4, center - 4), 2)
+        pygame.draw.circle(surface, eye_color, (center + 4, center - 4), 2)
+        
+        return surface
+    
+    def _create_snake_body_texture(self, size=20):
+        """Create a snake body texture programmatically"""
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        
+        # Draw snake body segment with gradient
+        center = size // 2
+        for i in range(center):
+            alpha = int(200 * (1 - i / center))
+            color = (0, 122, 255, alpha)
+            pygame.draw.circle(surface, color, (center, center), center - i)
+        
+        return surface
 
     def _load_sounds(self):
         # Initialize pygame mixer

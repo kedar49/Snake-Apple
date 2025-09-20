@@ -8,55 +8,58 @@ from game_assets import GameAssets
 # Center the pygame window
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
-# Configuration Constants
 WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 640   # 40 pixels reserved for header
+WINDOW_HEIGHT = 640
 GRID_SIZE = 20
 HEADER_HEIGHT = 40
-FPS = 10  # Decreased for slower movement
+FPS = 10
 
-# Colors
-BACKGROUND_COLOR = (255, 255, 255)  # White background
-GRID_COLOR = (200, 200, 200)  # Light gray for grid
-HEADER_COLOR = (240, 240, 240)  # Slightly darker than background
-APPLE_COLOR = (255, 69, 58)  # Vibrant red for apple
-SNAKE1_COLOR = (0, 122, 255)  # Bright blue
-SNAKE2_COLOR = (255, 45, 85)  # Bright red
-
-# --- Direction Enumeration ---
+BACKGROUND_COLOR = (255, 255, 255)
+GRID_COLOR = (200, 200, 200)
+HEADER_COLOR = (240, 240, 240)
+APPLE_COLOR = (255, 69, 58)
+SNAKE1_COLOR = (0, 122, 255)
+SNAKE2_COLOR = (255, 45, 85)
 class Direction(Enum):
     RIGHT = 1
     LEFT = 2
     UP = 3
     DOWN = 4
 
-# --- Main Game Environment ---
 class SnakeGameEnv:
     def __init__(self, width=WINDOW_WIDTH, height=WINDOW_HEIGHT, grid_size=GRID_SIZE):
         self.width = width
-        self.height = height - HEADER_HEIGHT  # Playable area
+        self.height = height - HEADER_HEIGHT
         self.grid_size = grid_size
         
         pygame.init()
         self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
-        pygame.display.set_caption('Snake\'s & The Golden Apple')
+        pygame.display.set_caption('Snake\'s & The Golden Apple - Enhanced RL Training')
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("Arial", 28, bold=True)
         
-        # Initialize game assets
         self.assets = GameAssets()
         self.apple_img = self.assets.get_texture('golden_apple')
         self.snake_head_img = self.assets.get_texture('snake_head')
         self.snake_body_img = self.assets.get_texture('snake_body')
         
-        # Initialize particle system for visual effects
+        if self.snake_head_img:
+            self.snake_head_img = pygame.transform.scale(self.snake_head_img, (self.grid_size, self.grid_size))
+        if self.snake_body_img:
+            self.snake_body_img = pygame.transform.scale(self.snake_body_img, (self.grid_size, self.grid_size))
+        if self.apple_img:
+            self.apple_img = pygame.transform.scale(self.apple_img, (self.grid_size, self.grid_size))
+        
         self.particles = []
         self.particle_lifetime = 20
+        
+        self.paused = False
+        self.show_controls = True
+        self.training_speed = 1.0
         
         self.reset()
 
     def reset(self):
-        # Initialize snakes at opposite sides
         self.snake1 = [(self.width // 4 // self.grid_size * self.grid_size, 
                         self.height // 2 // self.grid_size * self.grid_size)]
         self.snake2 = [(3 * self.width // 4 // self.grid_size * self.grid_size, 
@@ -69,7 +72,7 @@ class SnakeGameEnv:
         self.score1 = 0
         self.score2 = 0
         self.frame_iteration = 0
-        self.trail1 = []  # Trail for visual effect
+        self.trail1 = []
         self.trail2 = []
         self.particles = []
         pygame.event.pump()
@@ -103,24 +106,33 @@ class SnakeGameEnv:
             self.screen.blit(surf, (particle['pos'][0], particle['pos'][1] + HEADER_HEIGHT))
 
     def render(self, game_number):
-        # Process window resize events with grid alignment
-        for event in pygame.event.get((pygame.VIDEORESIZE, pygame.QUIT, pygame.KEYDOWN)):
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
                 self.close()
                 return False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.close()
+                    return False
+                elif event.key == pygame.K_SPACE:
+                    self.paused = not self.paused
+                elif event.key == pygame.K_h:
+                    self.show_controls = not self.show_controls
+                elif event.key == pygame.K_PLUS or event.key == pygame.K_EQUALS:
+                    self.training_speed = min(5.0, self.training_speed + 0.5)
+                elif event.key == pygame.K_MINUS:
+                    self.training_speed = max(0.1, self.training_speed - 0.5)
+                elif event.key == pygame.K_r:
+                    self.training_speed = 1.0
             elif event.type == pygame.VIDEORESIZE:
                 width, height = event.size
-                # Ensure minimum window size and grid alignment
                 width = max(400, width)
                 height = max(320 + HEADER_HEIGHT, height)
-                # Align dimensions to grid size
                 width = (width // self.grid_size) * self.grid_size
                 height = ((height - HEADER_HEIGHT) // self.grid_size) * self.grid_size + HEADER_HEIGHT
-                # Update screen dimensions
                 self.width = width
                 self.height = height - HEADER_HEIGHT
                 self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
-                # Adjust positions to maintain grid alignment
                 self._adjust_positions_after_resize()
         # Fill background
         self.screen.fill(BACKGROUND_COLOR)
@@ -139,13 +151,7 @@ class SnakeGameEnv:
                            (0, i), (self.width, i))
         self.screen.blit(header_surface, (0, 0))
         
-        # Display improved scoreboard with snake names
-        text1 = self.font.render(f'Bluessy: {self.score1}', True, SNAKE1_COLOR)
-        text2 = self.font.render(f'Redish: {self.score2}', True, SNAKE2_COLOR)
-        text_game = self.font.render(f'Game: {game_number}', True, (200, 200, 200))
-        self.screen.blit(text1, (10, 5))
-        self.screen.blit(text2, (200, 5))
-        self.screen.blit(text_game, (self.width - 150, 5))
+        self._draw_enhanced_ui(game_number)
         
         # Update and draw particles
         self._update_particles()
@@ -224,9 +230,10 @@ class SnakeGameEnv:
                                 (pt[0] - 2, pt[1] + HEADER_HEIGHT - 2))
                 
                 if self.snake_head_img:
-                    head_img = self.snake_head_img
+                    head_img = self.snake_head_img.copy()
                     if not is_snake1:
-                        head_img = pygame.transform.flip(head_img, True, False)
+                        # Color the head for snake2
+                        head_img.fill(SNAKE2_COLOR, special_flags=pygame.BLEND_MULT)
                     self.screen.blit(head_img, rect.topleft)
                 else:
                     pygame.draw.rect(self.screen, base_color, rect, border_radius=5)
@@ -277,22 +284,37 @@ class SnakeGameEnv:
             self.trail2.insert(0, new_head)
             self.trail2 = self.trail2[:10]
         
-        # Calculate rewards
         reward = 0
-        # Base reward for staying alive
-        reward += 0.1
         
-        # Distance-based reward
+        survival_reward = 0.1 * (1.0 - self.frame_iteration / 2000.0)
+        reward += survival_reward
+        
         old_dist = abs(snake[1][0] - self.food[0]) + abs(snake[1][1] - self.food[1])
         new_dist = abs(new_head[0] - self.food[0]) + abs(new_head[1] - self.food[1])
-        if new_dist < old_dist:
-            reward += 0.5  # Reward for moving closer to food
-        else:
-            reward -= 0.2  # Small penalty for moving away
+        distance_improvement = old_dist - new_dist
         
-        # Food collision reward
+        if distance_improvement > 0:
+            reward += 1.0 * (distance_improvement / self.grid_size)
+        else:
+            reward -= 0.3 * (abs(distance_improvement) / self.grid_size)
+        
         if new_head == self.food:
-            reward += 15  # Increased reward for eating food
+            base_food_reward = 20.0
+            length_bonus = len(snake) * 0.8
+            speed_bonus = max(0, 5.0 - self.frame_iteration / 100.0)
+            
+            other_snake = self.snake2 if snake_num == 1 else self.snake1
+            my_score = self.score1 if snake_num == 1 else self.score2
+            other_score = self.score2 if snake_num == 1 else self.score1
+            competitive_bonus = 0
+            if my_score > other_score:
+                competitive_bonus = 5.0
+            elif my_score == other_score:
+                competitive_bonus = 2.0
+            
+            total_food_reward = base_food_reward + length_bonus + speed_bonus + competitive_bonus
+            reward += total_food_reward
+            
             if snake_num == 1:
                 self.score1 += 1
                 self._create_particles(new_head, SNAKE1_COLOR)
@@ -300,16 +322,36 @@ class SnakeGameEnv:
                 self.score2 += 1
                 self._create_particles(new_head, SNAKE2_COLOR)
             self.food = self._place_food()
-            # Bonus reward for longer snake
-            reward += len(snake) * 0.5
         else:
             snake.pop()
         
-        # Penalty for getting too close to other snake
         other_snake = self.snake2 if snake_num == 1 else self.snake1
+        min_distance = float('inf')
         for part in other_snake:
-            if abs(new_head[0] - part[0]) + abs(new_head[1] - part[1]) <= self.grid_size:
-                reward -= 0.3
+            distance = abs(new_head[0] - part[0]) + abs(new_head[1] - part[1])
+            min_distance = min(min_distance, distance)
+        
+        if min_distance <= self.grid_size:
+            reward -= 1.0
+        elif min_distance <= self.grid_size * 2:
+            reward -= 0.2
+        else:
+            reward += 0.1
+        
+        my_food_distance = abs(new_head[0] - self.food[0]) + abs(new_head[1] - self.food[1])
+        opponent_food_distance = abs(other_snake[0][0] - self.food[0]) + abs(other_snake[0][1] - self.food[1])
+        
+        if my_food_distance < opponent_food_distance:
+            reward += 0.5
+        elif my_food_distance > opponent_food_distance * 1.5:
+            reward -= 0.3
+        
+        if len(snake) > 1:
+            efficiency = len(snake) / max(self.frame_iteration, 1)
+            reward += efficiency * 0.1
+        
+        if self.frame_iteration > 100:
+            reward += 0.05
         
         if snake_num == 1:
             self.snake1 = snake
@@ -371,7 +413,6 @@ class SnakeGameEnv:
                       (dir_l and self._is_collision(point_d, snake, other_snake)) or \
                       (dir_r and self._is_collision(point_u, snake, other_snake))
 
-        # Create state array
         state = [
             danger_straight,
             danger_right,
@@ -380,19 +421,146 @@ class SnakeGameEnv:
             dir_r,
             dir_u,
             dir_d,
-            self.food[0] < head[0],  # food left
-            self.food[0] > head[0],  # food right
-            self.food[1] < head[1],  # food up
-            self.food[1] > head[1]   # food down
+            self.food[0] < head[0],
+            self.food[0] > head[0],
+            self.food[1] < head[1],
+            self.food[1] > head[1],
+            abs(self.food[0] - head[0]) / self.width,
+            abs(self.food[1] - head[1]) / self.height,
+            head[0] / self.width,
+            (self.width - head[0]) / self.width,
+            head[1] / self.height,
+            (self.height - head[1]) / self.height,
+            len(snake) / 50.0,
+            self._get_opponent_relative_position(head, other_snake),
+            self._get_opponent_distance(head, other_snake),
+            self._is_opponent_closer_to_food(head, other_snake),
+            *self._get_recent_actions(snake),
+            self.frame_iteration / 1000.0,
         ]
-        return np.array(state, dtype=int)
+        return np.array(state, dtype=float)
+
+    def _get_opponent_relative_position(self, head, other_snake):
+        if not other_snake:
+            return 0
+        opponent_head = other_snake[0]
+        dx = opponent_head[0] - head[0]
+        dy = opponent_head[1] - head[1]
+        
+        if abs(dx) > abs(dy):
+            return 1 if dx > 0 else 2
+        else:
+            return 3 if dy > 0 else 4
+
+    def _get_opponent_distance(self, head, other_snake):
+        if not other_snake:
+            return 1.0
+        opponent_head = other_snake[0]
+        distance = abs(head[0] - opponent_head[0]) + abs(head[1] - opponent_head[1])
+        return min(distance / (self.width + self.height), 1.0)
+
+    def _is_opponent_closer_to_food(self, head, other_snake):
+        if not other_snake:
+            return 0
+        my_distance = abs(head[0] - self.food[0]) + abs(head[1] - self.food[1])
+        opponent_distance = abs(other_snake[0][0] - self.food[0]) + abs(other_snake[0][1] - self.food[1])
+        return 1 if opponent_distance < my_distance else 0
+
+    def _get_recent_actions(self, snake):
+        return [0, 0, 0]
+
+    def _draw_enhanced_ui(self, game_number):
+        score_font = pygame.font.SysFont("Arial", 20, bold=True)
+        small_font = pygame.font.SysFont("Arial", 14)
+        
+        # Score panels with modern design
+        panel_height = 35
+        score1_rect = pygame.Rect(15, 8, 200, panel_height)
+        score2_rect = pygame.Rect(230, 8, 200, panel_height)
+        info_rect = pygame.Rect(self.width - 200, 8, 180, panel_height)
+        
+        # Gradient backgrounds
+        self._draw_gradient_rect(score1_rect, SNAKE1_COLOR, (0, 0, 0, 50))
+        self._draw_gradient_rect(score2_rect, SNAKE2_COLOR, (0, 0, 0, 50))
+        self._draw_gradient_rect(info_rect, (40, 40, 40), (0, 0, 0, 50))
+        
+        # Score text with shadows
+        text1 = score_font.render(f'Bluessy: {self.score1}', True, (255, 255, 255))
+        text2 = score_font.render(f'Redish: {self.score2}', True, (255, 255, 255))
+        text_game = small_font.render(f'Game: {game_number}', True, (200, 200, 200))
+        
+        self.screen.blit(text1, (25, 15))
+        self.screen.blit(text2, (240, 15))
+        self.screen.blit(text_game, (self.width - 190, 20))
+        
+        # Performance indicators
+        if hasattr(self, 'frame_iteration'):
+            steps_text = small_font.render(f'Steps: {self.frame_iteration}', True, (180, 180, 180))
+            self.screen.blit(steps_text, (self.width - 350, 20))
+        
+        speed_text = small_font.render(f'Speed: {self.training_speed:.1f}x', True, (180, 180, 180))
+        self.screen.blit(speed_text, (self.width - 350, 35))
+        
+        # Pause overlay
+        if self.paused:
+            self._draw_pause_overlay()
+        
+        # Control overlay
+        if self.show_controls:
+            self._draw_control_overlay()
+
+    def _draw_gradient_rect(self, rect, color1, color2):
+        for i in range(rect.height):
+            ratio = i / rect.height
+            r = int(color1[0] * (1 - ratio) + color2[0] * ratio)
+            g = int(color1[1] * (1 - ratio) + color2[1] * ratio)
+            b = int(color1[2] * (1 - ratio) + color2[2] * ratio)
+            a = int(color1[3] * (1 - ratio) + color2[3] * ratio) if len(color1) > 3 else 255
+            pygame.draw.line(self.screen, (r, g, b, a), (rect.x, rect.y + i), (rect.x + rect.width, rect.y + i))
+
+    def _draw_pause_overlay(self):
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 150))
+        self.screen.blit(overlay, (0, HEADER_HEIGHT))
+        
+        pause_font = pygame.font.SysFont("Arial", 64, bold=True)
+        pause_text = pause_font.render("PAUSED", True, (255, 100, 100))
+        pause_rect = pause_text.get_rect(center=(self.width // 2, self.height // 2 + HEADER_HEIGHT))
+        
+        # Glow effect
+        for i in range(5):
+            glow_color = (255, 100, 100, 50 - i * 10)
+            glow_text = pause_font.render("PAUSED", True, glow_color)
+            glow_rect = glow_text.get_rect(center=(pause_rect.centerx + i, pause_rect.centery + i))
+            self.screen.blit(glow_text, glow_rect)
+        
+        self.screen.blit(pause_text, pause_rect)
+
+    def _draw_control_overlay(self):
+        overlay_font = pygame.font.SysFont("Arial", 12)
+        controls = [
+            "CONTROLS",
+            "SPACE - Pause/Resume",
+            "H - Toggle Help",
+            "+/- - Speed Control",
+            "R - Reset Speed",
+            "ESC - Exit"
+        ]
+        
+        overlay_surface = pygame.Surface((180, 100), pygame.SRCALPHA)
+        overlay_surface.fill((0, 0, 0, 180))
+        
+        for i, control in enumerate(controls):
+            color = (255, 255, 0) if i == 0 else (255, 255, 255)
+            text = overlay_font.render(control, True, color)
+            overlay_surface.blit(text, (10, 5 + i * 15))
+        
+        self.screen.blit(overlay_surface, (self.width - 190, HEADER_HEIGHT + 10))
 
     def _is_collision(self, point, snake, other_snake):
-        # Check if point is out of bounds
         if point[0] < 0 or point[0] >= self.width or \
            point[1] < 0 or point[1] >= self.height:
             return True
-        # Check if point collides with snake body or other snake
         if point in snake[1:] or point in other_snake:
             return True
         return False
@@ -406,7 +574,6 @@ class SnakeGameEnv:
                 return food_pos
 
     def _adjust_positions_after_resize(self):
-        # Adjust snake positions
         for i, pos in enumerate(self.snake1):
             x, y = pos
             x = min(max(0, x), self.width - self.grid_size)
@@ -419,18 +586,15 @@ class SnakeGameEnv:
             y = min(max(0, y), self.height - self.grid_size)
             self.snake2[i] = (x, y)
         
-        # Adjust food position
         x, y = self.food
         x = min(max(0, x), self.width - self.grid_size)
         y = min(max(0, y), self.height - self.grid_size)
         self.food = (x, y)
 
-# --- Main Loop for Testing ---
 if __name__ == "__main__":
     env = SnakeGameEnv()
     game_number = 1
     done = False
-    # Dummy actions: [1, 0, 0] (no change) for both snakes.
     action1 = np.array([1, 0, 0])
     action2 = np.array([1, 0, 0])
     while not done:

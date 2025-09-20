@@ -1,0 +1,43 @@
+{
+  "games": [
+    1
+  ],
+  "scores1": [
+    5
+  ],
+  "scores2": [
+    3
+  ],
+  "mean_scores1": [
+    5.0
+  ],
+  "mean_scores2": [
+    3.0
+  ],
+  "losses1": [
+    0.1
+  ],
+  "losses2": [
+    0.2
+  ],
+  "q_values1": [
+    2.5
+  ],
+  "q_values2": [
+    2.3
+  ],
+  "epsilon1": [
+    0.8
+  ],
+  "epsilon2": [
+    0.8
+  ],
+  "rewards1": [],
+  "rewards2": [],
+  "game_lengths": [
+    100
+  ],
+  "win_rates": [
+    1.0
+  ]
+}

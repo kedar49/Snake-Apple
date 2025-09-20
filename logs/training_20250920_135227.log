@@ -1,0 +1,5 @@
+2025-09-20 13:52:27,505 - INFO - Game 1: Bluessy=5, Redish=3, Mean: B=5.00, R=3.00, Length=100, Winner=Bluessy
+2025-09-20 13:52:27,506 - INFO - Metrics saved to logs\test_metrics.json
+2025-09-20 13:52:32,720 - INFO - Game 1: Bluessy=0, Redish=0, Mean: B=0.00, R=0.00, Length=50, Winner=Tie
+2025-09-20 13:52:37,748 - INFO - Game 2: Bluessy=0, Redish=0, Mean: B=0.00, R=0.00, Length=50, Winner=Tie
+2025-09-20 13:52:42,775 - INFO - Game 3: Bluessy=0, Redish=0, Mean: B=0.00, R=0.00, Length=50, Winner=Tie
