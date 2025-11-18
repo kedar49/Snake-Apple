@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake RL - AI Learning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#fb7185',
+                        secondary: '#fda4af',
+                        accent: '#fbbf24',
+                        peach: '#fecaca',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(251, 113, 133, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(253, 164, 175, 0.6);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .fade-in {
+            animation: fadeIn 1s ease-out forwards;
+        }
+
+        .glow {
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        .slide-in {
+            animation: slideIn 0.8s ease-out forwards;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #fb7185, #fda4af, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(251, 113, 133, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        }
+
+        .icon-circle {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fb7185, #fda4af);
+            margin: 0 auto;
+        }
+
+        .social-link {
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            transform: translateY(-3px);
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body class="bg-white text-gray-900 overflow-x-hidden">
+
+    <!-- Top Navigation -->
+    <nav class="fixed top-0 right-0 z-50 p-6 fade-in">
+        <div class="flex gap-3">
+            <a href="https://wtfkedar.vercel.app" target="_blank" class="nav-btn glass hover:border-primary/30">
+                <i class="fas fa-user text-sm"></i>
+                <span>Portfolio</span>
+            </a>
+            <a href="https://github.com/kedar49/Snake-Apple" target="_blank"
+                class="nav-btn bg-gradient-to-r from-primary to-secondary text-white hover:shadow-lg hover:shadow-primary/30">
+                <i class="fas fa-star text-sm"></i>
+                <span>Star on GitHub</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="flex items-center justify-center relative overflow-hidden pt-16 pb-8">
+        <!-- Animated Background -->
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-20 left-20 w-72 h-72 bg-primary rounded-full blur-3xl"></div>
+            <div class="absolute bottom-20 right-20 w-96 h-96 bg-secondary rounded-full blur-3xl"></div>
+        </div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="text-center mb-6 fade-in">
+                <div class="inline-block mb-3 float">
+                    <div class="icon-circle">
+                        <i class="fas fa-brain text-white text-3xl"></i>
+                    </div>
+                </div>
+                <h1 class="text-5xl md:text-7xl font-bold mb-3 gradient-text">
+                    Snake's & Apple
+                </h1>
+                <p class="text-lg md:text-xl text-gray-600 mb-6 max-w-2xl mx-auto">
+                    Watch AI master the classic game through deep reinforcement learning
+                </p>
+            </div>
+
+            <!-- Image Showcase -->
+            <div class="max-w-2xl mx-auto mb-6 fade-in" style="animation-delay: 0.2s;">
+                <div class="glass rounded-2xl p-3 glow">
+                    <img src="image.png" alt="Snake RL" class="w-full rounded-xl shadow-2xl">
+                </div>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center fade-in"
+                style="animation-delay: 0.4s;">
+                <button id="watchBtn"
+                    class="px-6 py-3 bg-gradient-to-r from-primary via-secondary to-accent text-white rounded-lg font-semibold hover:scale-105 transition-transform duration-300 shadow-lg hover:shadow-primary/50">
+                    <i class="fas fa-play mr-2"></i>Watch Demo
+                </button>
+                <a href="https://github.com/kedar49/Snake-Apple" target="_blank"
+                    class="px-6 py-3 glass rounded-lg font-semibold hover:scale-105 transition-transform duration-300 inline-flex items-center gap-2">
+                    <i class="fab fa-github"></i>View on GitHub
+                </a>
+            </div>
+
+            <!-- Social Links -->
+            <div class="flex gap-4 justify-center mt-8 fade-in" style="animation-delay: 0.6s;">
+                <a href="https://github.com/kedar49/Snake-Apple" target="_blank"
+                    class="social-link text-gray-600 hover:text-primary">
+                    <i class="fab fa-github text-2xl"></i>
+                </a>
+                <a href="https://wtfkedar.vercel.app" target="_blank"
+                    class="social-link text-gray-600 hover:text-secondary">
+                    <i class="fas fa-globe text-2xl"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="py-12 relative">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div class="glass rounded-xl p-6 text-center hover:scale-105 transition-transform duration-300 slide-in"
+                    style="animation-delay: 0.1s;">
+                    <div class="mb-3">
+                        <i class="fas fa-chart-line text-4xl text-primary"></i>
+                    </div>
+                    <div class="text-3xl font-bold gradient-text mb-1" id="episodes">0</div>
+                    <div class="text-gray-600 uppercase text-xs tracking-wider">Episodes</div>
+                </div>
+                <div class="glass rounded-xl p-6 text-center hover:scale-105 transition-transform duration-300 slide-in"
+                    style="animation-delay: 0.2s;">
+                    <div class="mb-3">
+                        <i class="fas fa-trophy text-4xl text-secondary"></i>
+                    </div>
+                    <div class="text-3xl font-bold gradient-text mb-1" id="score">0</div>
+                    <div class="text-gray-600 uppercase text-xs tracking-wider">Best Score</div>
+                </div>
+                <div class="glass rounded-xl p-6 text-center hover:scale-105 transition-transform duration-300 slide-in"
+                    style="animation-delay: 0.3s;">
+                    <div class="mb-3">
+                        <i class="fas fa-bullseye text-4xl text-primary"></i>
+                    </div>
+                    <div class="text-3xl font-bold gradient-text mb-1" id="accuracy">0%</div>
+                    <div class="text-gray-600 uppercase text-xs tracking-wider">Accuracy</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Algorithm Explanation -->
+    <div class="py-12 relative bg-gradient-to-br from-rose-50 to-amber-50">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 gradient-text">The Algorithm</h2>
+            <p class="text-center text-gray-600 mb-8 max-w-2xl mx-auto">
+                Deep Q-Learning (DQN) combines neural networks with Q-learning to teach the agent optimal gameplay
+            </p>
+
+            <div class="max-w-3xl mx-auto glass rounded-2xl p-6 md:p-8">
+                <div class="space-y-6">
+                    <div class="flex gap-4 items-start">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold">
+                            1
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold mb-1">State Observation</h3>
+                            <p class="text-gray-600 text-sm">The agent observes the game state: snake position, food
+                                location,
+                                and obstacles. This becomes the input to the neural network.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 items-start">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-accent flex items-center justify-center text-white font-bold">
+                            2
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold mb-1">Action Selection</h3>
+                            <p class="text-gray-600 text-sm">The neural network predicts Q-values for each action (up,
+                                down,
+                                left, right). The agent picks the action with the highest expected reward.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 items-start">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center text-white font-bold">
+                            3
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold mb-1">Reward & Learning</h3>
+                            <p class="text-gray-600 text-sm">After each move, the agent receives a reward (+10 for food,
+                                -10 for
+                                collision). The network updates its weights using backpropagation to improve future
+                                decisions.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 items-start">
+                        <div
+                            class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold">
+                            4
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold mb-1">Experience Replay</h3>
+                            <p class="text-gray-600 text-sm">Past experiences are stored in memory and randomly sampled
+                                during
+                                training. This breaks correlation between consecutive states and stabilizes learning.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="py-12 relative">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 gradient-text">Key Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div class="glass rounded-xl p-6 hover:border-primary/50 transition-all duration-300">
+                    <div class="mb-4">
+                        <i class="fas fa-gamepad text-4xl text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Classic Game</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">The timeless Snake game reimagined as an AI
+                        training
+                        environment</p>
+                </div>
+                <div class="glass rounded-xl p-6 hover:border-primary/50 transition-all duration-300">
+                    <div class="mb-4">
+                        <i class="fas fa-robot text-4xl text-secondary"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Deep Q-Learning</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Neural networks learn optimal strategies through
+                        trial and
+                        error</p>
+                </div>
+                <div class="glass rounded-xl p-6 hover:border-primary/50 transition-all duration-300">
+                    <div class="mb-4">
+                        <i class="fas fa-rocket text-4xl text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Real-time Training</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Watch performance improve over thousands of
+                        training
+                        episodes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-8 border-t border-gray-200">
+        <div class="container mx-auto px-6 text-center">
+            <div class="text-gray-600">
+                <p class="font-semibold mb-1 text-sm">Built with Python, PyTorch & Reinforcement Learning</p>
+                <p class="text-xs">Created by <a href="https://wtfkedar.vercel.app" target="_blank"
+                        class="text-primary hover:text-secondary transition-colors font-medium">Kedar</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Animate numbers
+        const animateValue = (element, start, end, duration, suffix = '') => {
+            const startTime = performance.now();
+            const update = (currentTime) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const current = Math.floor(start + (end - start) * progress);
+                element.textContent = current + suffix;
+                if (progress < 1) requestAnimationFrame(update);
+            };
+            requestAnimationFrame(update);
+        };
+
+        // Initialize stats
+        setTimeout(() => {
+            const episodes = document.getElementById('episodes');
+            const score = document.getElementById('score');
+            const accuracy = document.getElementById('accuracy');
+
+            if (episodes) animateValue(episodes, 0, 15420, 2000);
+            if (score) animateValue(score, 0, 87, 2000);
+            if (accuracy) animateValue(accuracy, 0, 94, 2000, '%');
+        }, 500);
+
+        // Button interaction
+        document.getElementById('watchBtn')?.addEventListener('click', () => {
+            document.querySelector('.py-20')?.scrollIntoView({ behavior: 'smooth' });
+        });
+    </script>
+</body>
+
+</html>
